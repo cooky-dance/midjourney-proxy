@@ -56,11 +56,11 @@ class MessageHandlerImageTest {
 				com.github.novicezk.midjourney.enums.MessageType messageType, DataObject message) {
 		}
 
-		boolean hasImage(DataObject message) {
+		public boolean hasImage(DataObject message) {
 			return super.hasImage(message);
 		}
 
-		String imageUrl(DataObject message) {
+		public String imageUrl(DataObject message) {
 			return super.getImageUrl(message);
 		}
 	}
