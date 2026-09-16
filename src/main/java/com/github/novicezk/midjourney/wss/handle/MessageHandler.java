@@ -88,17 +88,53 @@ public abstract class MessageHandler {
 	}
 
 	protected boolean hasImage(DataObject message) {
-		DataArray attachments = message.optArray("attachments").orElse(DataArray.empty());
-		return !attachments.isEmpty();
+		return CharSequenceUtil.isNotBlank(getImageUrl(message));
 	}
 
 	protected String getImageUrl(DataObject message) {
-		DataArray attachments = message.getArray("attachments");
-		if (!attachments.isEmpty()) {
-			String imageUrl = attachments.getObject(0).getString("url");
-			return replaceCdnUrl(imageUrl);
+		DataArray attachments = message.optArray("attachments").orElse(DataArray.empty());
+		for (int i = 0; i < attachments.length(); i++) {
+			String imageUrl = attachments.getObject(i).getString("url", null);
+			if (CharSequenceUtil.isNotBlank(imageUrl)) {
+				return replaceCdnUrl(imageUrl);
+			}
+		}
+
+		DataArray embeds = message.optArray("embeds").orElse(DataArray.empty());
+		for (int i = 0; i < embeds.length(); i++) {
+			DataObject embed = embeds.getObject(i);
+			String imageUrl = embed.optObject("image")
+					.map(image -> image.getString("url", null))
+					.orElse(null);
+			if (CharSequenceUtil.isBlank(imageUrl)) {
+				imageUrl = embed.optObject("thumbnail")
+						.map(thumbnail -> thumbnail.getString("url", null))
+						.orElse(null);
+			}
+			if (CharSequenceUtil.isBlank(imageUrl)) {
+				String embedUrl = embed.getString("url", null);
+				if (isImageUrl(embedUrl)) {
+					imageUrl = embedUrl;
+				}
+			}
+			if (CharSequenceUtil.isNotBlank(imageUrl)) {
+				return replaceCdnUrl(imageUrl);
+			}
 		}
 		return null;
+	}
+
+	private boolean isImageUrl(String url) {
+		if (CharSequenceUtil.isBlank(url)) {
+			return false;
+		}
+		String normalized = url.toLowerCase();
+		int queryIndex = normalized.indexOf('?');
+		if (queryIndex >= 0) {
+			normalized = normalized.substring(0, queryIndex);
+		}
+		return normalized.endsWith(".png") || normalized.endsWith(".jpg") || normalized.endsWith(".jpeg")
+				|| normalized.endsWith(".webp") || normalized.endsWith(".gif");
 	}
 
 	protected String replaceCdnUrl(String imageUrl) {
