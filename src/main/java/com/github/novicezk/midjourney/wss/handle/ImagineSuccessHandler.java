@@ -15,7 +15,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class ImagineSuccessHandler extends MessageHandler {
-	public static final String CONTENT_REGEX = "\\*\\*(.*)\\*\\* - <@\\d+> \\((.*?)\\)";
+	public static final String CONTENT_REGEX = "\\*\\*(.*?)\\*\\*.*?<@\\d+>.*\\(([^()]*)\\)\\s*$";
 
 	@Override
 	public int order() {
