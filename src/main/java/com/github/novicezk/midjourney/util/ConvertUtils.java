@@ -19,7 +19,7 @@ public class ConvertUtils {
 	/**
 	 * content正则匹配prompt和进度.
 	 */
-	public static final String CONTENT_REGEX = ".*?\\*\\*(.*?)\\*\\*.*?<@\\d+>.*\\(([^()]*)\\)\\s*$";
+	public static final String CONTENT_REGEX = "(?m).*?\\*\\*(.*?)\\*\\*.*?<@\\d+>.*\\(([^()]*)\\)\\s*$";
 
 	public static ContentParseData parseContent(String content) {
 		return parseContent(content, CONTENT_REGEX);

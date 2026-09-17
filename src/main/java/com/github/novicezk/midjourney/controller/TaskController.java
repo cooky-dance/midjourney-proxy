@@ -68,7 +68,9 @@ public class TaskController {
 			HttpHeaders headers = new HttpHeaders();
 			MediaType contentType = imageResponse.getHeaders().getContentType();
 			headers.setContentType(contentType == null ? MediaType.APPLICATION_OCTET_STREAM : contentType);
-			headers.setContentDisposition(ContentDisposition.attachment().filename("midjourney-" + id + ".png").build());
+			String extension = contentType != null && "webp".equals(contentType.getSubtype()) ? ".webp"
+					: contentType != null && "jpeg".equals(contentType.getSubtype()) ? ".jpg" : ".png";
+			headers.setContentDisposition(ContentDisposition.attachment().filename("midjourney-" + id + extension).build());
 			return new ResponseEntity<>(imageResponse.getBody(), headers, HttpStatus.OK);
 		} catch (URISyntaxException | RestClientException exception) {
 			return ResponseEntity.status(HttpStatus.BAD_GATEWAY).build();

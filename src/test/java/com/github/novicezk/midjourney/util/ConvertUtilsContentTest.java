@@ -10,7 +10,7 @@ class ConvertUtilsContentTest {
 	void parsesCurrentMidjourneyJobLinkFormat() {
 		ContentParseData parsed = ConvertUtils.parseContent(
 				"**a blue ceramic cup** - <@866170769272078346> "
-						+ "[(Open on website for full quality)](<https://midjourney.com/jobs/123>) (fast)");
+						+ "[(Open on website for full quality)](<https://midjourney.com/jobs/123>) (fast)\n-# Create, explore, and organize on [midjourney.com](<https://midjourney.com/imagine?from_discord=1>)");
 
 		assertNotNull(parsed);
 		assertEquals("a blue ceramic cup", parsed.getPrompt());
