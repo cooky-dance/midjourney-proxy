@@ -11,6 +11,7 @@
 | mj.discord.queue-size         | 否  | 等待队列，默认长度10                                   |
 | mj.discord.timeout-minutes    | 否  | 任务超时时间，默认为5分钟                                 |
 | mj.api-secret                 | 否  | 接口密钥，为空不启用鉴权；调用接口时需要加请求头 mj-api-secret        |
+| mj.api-secret-slow            | 否  | 慢速专用接口密钥；仅允许Imagine和任务查询/下载，并强制追加 --relax |
 | mj.notify-hook                | 否  | 全局的任务状态变更回调地址                                 |
 | mj.notify-notify-pool-size    | 否  | 通知回调线程池大小，默认10                                |
 | mj.task-store.type            | 否  | 任务存储方式，默认in_memory(内存\重启后丢失)，可选redis          |

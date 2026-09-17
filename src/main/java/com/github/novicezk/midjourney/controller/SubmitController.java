@@ -19,6 +19,7 @@ import com.github.novicezk.midjourney.result.SubmitResultVO;
 import com.github.novicezk.midjourney.service.TaskService;
 import com.github.novicezk.midjourney.service.TaskStoreService;
 import com.github.novicezk.midjourney.service.TranslateService;
+import com.github.novicezk.midjourney.support.ApiAuthorizeInterceptor;
 import com.github.novicezk.midjourney.support.Task;
 import com.github.novicezk.midjourney.util.BannedPromptUtils;
 import com.github.novicezk.midjourney.util.ConvertUtils;
@@ -36,6 +37,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
+
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,6 +52,7 @@ import java.util.regex.Pattern;
 @RequestMapping("/submit")
 @RequiredArgsConstructor
 public class SubmitController {
+	private static final Pattern SPEED_PARAMETER = Pattern.compile("(?i)(^|\\s)--(?:fast|turbo|relax)(?=\\s|$)");
 	private final TranslateService translateService;
 	private final TaskStoreService taskStoreService;
 	private final ProxyProperties properties;
@@ -56,12 +60,15 @@ public class SubmitController {
 
 	@ApiOperation(value = "提交Imagine任务")
 	@PostMapping("/imagine")
-	public SubmitResultVO imagine(@RequestBody SubmitImagineDTO imagineDTO) {
+	public SubmitResultVO imagine(@RequestBody SubmitImagineDTO imagineDTO, HttpServletRequest request) {
 		String prompt = imagineDTO.getPrompt();
 		if (CharSequenceUtil.isBlank(prompt)) {
 			return SubmitResultVO.fail(ReturnCode.VALIDATION_ERROR, "prompt不能为空");
 		}
 		prompt = prompt.trim();
+		if (Boolean.TRUE.equals(request.getAttribute(ApiAuthorizeInterceptor.SLOW_MODE_ATTRIBUTE))) {
+			prompt = forceRelaxMode(prompt);
+		}
 		Task task = newTask(imagineDTO);
 		task.setAction(TaskAction.IMAGINE);
 		task.setPrompt(prompt);
@@ -85,6 +92,11 @@ public class SubmitController {
 		task.setPromptEn(promptEn);
 		task.setDescription("/imagine " + prompt);
 		return this.taskService.submitImagine(task, dataUrls);
+	}
+
+	private String forceRelaxMode(String prompt) {
+		String withoutSpeed = SPEED_PARAMETER.matcher(prompt).replaceAll("$1").trim();
+		return withoutSpeed + " --relax";
 	}
 
 	@ApiOperation(value = "绘图变化-simple")

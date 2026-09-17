@@ -54,6 +54,10 @@ public class ProxyProperties {
 	 */
 	private String apiSecret;
 	/**
+	 * 仅允许Relax模式Imagine任务的接口密钥.
+	 */
+	private String apiSecretSlow;
+	/**
 	 * 任务状态变更回调地址.
 	 */
 	private String notifyHook;

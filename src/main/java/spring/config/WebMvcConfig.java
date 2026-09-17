@@ -24,7 +24,8 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
 	@Override
 	public void addInterceptors(InterceptorRegistry registry) {
-		if (CharSequenceUtil.isNotBlank(this.properties.getApiSecret())) {
+		if (CharSequenceUtil.isNotBlank(this.properties.getApiSecret())
+				|| CharSequenceUtil.isNotBlank(this.properties.getApiSecretSlow())) {
 			registry.addInterceptor(this.apiAuthorizeInterceptor)
 					.addPathPatterns("/submit/**", "/task/**", "/account/**");
 		}
