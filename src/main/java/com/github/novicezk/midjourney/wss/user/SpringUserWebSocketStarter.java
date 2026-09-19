@@ -90,7 +90,9 @@ public class SpringUserWebSocketStarter implements WebSocketStarter {
 
 	private void onSocketSuccess(String sessionId, Object sequence, String resumeGatewayUrl) {
 		this.resumeData = new ResumeData(sessionId, sequence, resumeGatewayUrl);
+		this.account.setSessionId(sessionId);
 		this.running = true;
+		log.info("[wss-{}] Gateway session ready.", this.account.getDisplay());
 		notifyWssLock(ReturnCode.SUCCESS, "");
 	}
 
@@ -100,12 +102,16 @@ public class SpringUserWebSocketStarter implements WebSocketStarter {
 			return;
 		}
 		closeSocketSessionWhenIsOpen();
+		this.account.setSessionId(null);
 		if (!this.running) {
 			notifyWssLock(code, reason);
 			return;
 		}
 		this.running = false;
-		if (code >= 4000) {
+		if (code == SpringWebSocketHandler.CLOSE_CODE_INVALIDATE) {
+			log.warn("[wss-{}] Discord invalidated the Gateway session. Account disabled; automatic reconnect is intentionally suppressed.", this.account.getDisplay());
+			disableAccount();
+		} else if (code >= 4000) {
 			log.warn("[wss-{}] Can't reconnect! Account disabled. Closed by {}({}).", this.account.getDisplay(), code, reason);
 			disableAccount();
 		} else if (code == 2001) {

@@ -21,6 +21,13 @@ public class DiscordAccount extends DomainObject {
 	@ApiModelProperty("用户UserAgent")
 	private String userAgent = Constants.DEFAULT_DISCORD_USER_AGENT;
 
+	/**
+	 * Active Discord Gateway session id. This value is learned from READY/RESUMED
+	 * and must never be persisted as a hard-coded interaction session.
+	 */
+	@JsonIgnore
+	private volatile String sessionId;
+
 	@ApiModelProperty("是否可用")
 	private boolean enable = true;
 

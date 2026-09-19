@@ -217,7 +217,6 @@ public class SpringWebSocketHandler implements WebSocketHandler {
 				.put("browser", agent.getBrowser().getGroup().getName())
 				.put("browser_user_agent", this.account.getUserAgent())
 				.put("browser_version", agent.getBrowserVersion().toString())
-				.put("client_build_number", 222963)
 				.put("client_event_source", null)
 				.put("device", "")
 				.put("os", agent.getOperatingSystem().getName())

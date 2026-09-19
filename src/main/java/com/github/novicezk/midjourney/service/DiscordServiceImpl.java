@@ -25,8 +25,6 @@ import java.util.Map;
 
 @Slf4j
 public class DiscordServiceImpl implements DiscordService {
-	private static final String DEFAULT_SESSION_ID = "f1a313a09ce079ce252459dc70231f30";
-
 	private final DiscordAccount account;
 	private final Map<String, String> paramsMap;
 	private final RestTemplate restTemplate;
@@ -119,9 +117,13 @@ public class DiscordServiceImpl implements DiscordService {
 	}
 
 	private String replaceInteractionParams(String paramsStr, String nonce) {
+		String sessionId = this.account.getSessionId();
+		if (CharSequenceUtil.isBlank(sessionId)) {
+			throw new IllegalStateException("Discord Gateway session is not ready; refusing to submit with a stale session id");
+		}
 		return paramsStr.replace("$guild_id", this.account.getGuildId())
 				.replace("$channel_id", this.account.getChannelId())
-				.replace("$session_id", DEFAULT_SESSION_ID)
+				.replace("$session_id", sessionId)
 				.replace("$nonce", nonce);
 	}
 
