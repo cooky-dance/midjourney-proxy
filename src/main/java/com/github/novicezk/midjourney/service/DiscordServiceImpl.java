@@ -22,6 +22,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 
 @Slf4j
 public class DiscordServiceImpl implements DiscordService {
@@ -47,73 +48,81 @@ public class DiscordServiceImpl implements DiscordService {
 
 	@Override
 	public Message<Void> imagine(String prompt, String nonce) {
-		String paramsStr = replaceInteractionParams(this.paramsMap.get("imagine"), nonce);
-		JSONObject params = new JSONObject(paramsStr);
-		params.getJSONObject("data").getJSONArray("options").getJSONObject(0)
-				.put("value", prompt);
-		return postJsonAndCheckStatus(params.toString());
+		return runInteraction(() -> {
+			String paramsStr = replaceInteractionParams(this.paramsMap.get("imagine"), nonce);
+			JSONObject params = new JSONObject(paramsStr);
+			params.getJSONObject("data").getJSONArray("options").getJSONObject(0)
+					.put("value", prompt);
+			return params.toString();
+		});
 	}
 
 	@Override
 	public Message<Void> upscale(String messageId, int index, String messageHash, int messageFlags, String nonce) {
-		String paramsStr = replaceInteractionParams(this.paramsMap.get("upscale"), nonce)
-				.replace("$message_id", messageId)
-				.replace("$index", String.valueOf(index))
-				.replace("$message_hash", messageHash);
-		paramsStr = new JSONObject(paramsStr).put("message_flags", messageFlags).toString();
-		return postJsonAndCheckStatus(paramsStr);
+		return runInteraction(() -> {
+			String paramsStr = replaceInteractionParams(this.paramsMap.get("upscale"), nonce)
+					.replace("$message_id", messageId)
+					.replace("$index", String.valueOf(index))
+					.replace("$message_hash", messageHash);
+			return new JSONObject(paramsStr).put("message_flags", messageFlags).toString();
+		});
 	}
 
 	@Override
 	public Message<Void> variation(String messageId, int index, String messageHash, int messageFlags, String nonce) {
-		String paramsStr = replaceInteractionParams(this.paramsMap.get("variation"), nonce)
-				.replace("$message_id", messageId)
-				.replace("$index", String.valueOf(index))
-				.replace("$message_hash", messageHash);
-		paramsStr = new JSONObject(paramsStr).put("message_flags", messageFlags).toString();
-		return postJsonAndCheckStatus(paramsStr);
+		return runInteraction(() -> {
+			String paramsStr = replaceInteractionParams(this.paramsMap.get("variation"), nonce)
+					.replace("$message_id", messageId)
+					.replace("$index", String.valueOf(index))
+					.replace("$message_hash", messageHash);
+			return new JSONObject(paramsStr).put("message_flags", messageFlags).toString();
+		});
 	}
 
 	@Override
 	public Message<Void> reroll(String messageId, String messageHash, int messageFlags, String nonce) {
-		String paramsStr = replaceInteractionParams(this.paramsMap.get("reroll"), nonce)
-				.replace("$message_id", messageId)
-				.replace("$message_hash", messageHash);
-		paramsStr = new JSONObject(paramsStr).put("message_flags", messageFlags).toString();
-		return postJsonAndCheckStatus(paramsStr);
+		return runInteraction(() -> {
+			String paramsStr = replaceInteractionParams(this.paramsMap.get("reroll"), nonce)
+					.replace("$message_id", messageId)
+					.replace("$message_hash", messageHash);
+			return new JSONObject(paramsStr).put("message_flags", messageFlags).toString();
+		});
 	}
 
 	@Override
 	public Message<Void> describe(String finalFileName, String nonce) {
-		String fileName = CharSequenceUtil.subAfter(finalFileName, "/", true);
-		String paramsStr = replaceInteractionParams(this.paramsMap.get("describe"), nonce)
-				.replace("$file_name", fileName)
-				.replace("$final_file_name", finalFileName);
-		return postJsonAndCheckStatus(paramsStr);
+		return runInteraction(() -> {
+			String fileName = CharSequenceUtil.subAfter(finalFileName, "/", true);
+			return replaceInteractionParams(this.paramsMap.get("describe"), nonce)
+					.replace("$file_name", fileName)
+					.replace("$final_file_name", finalFileName);
+		});
 	}
 
 	@Override
 	public Message<Void> blend(List<String> finalFileNames, BlendDimensions dimensions, String nonce) {
-		String paramsStr = replaceInteractionParams(this.paramsMap.get("blend"), nonce);
-		JSONObject params = new JSONObject(paramsStr);
-		JSONArray options = params.getJSONObject("data").getJSONArray("options");
-		JSONArray attachments = params.getJSONObject("data").getJSONArray("attachments");
-		for (int i = 0; i < finalFileNames.size(); i++) {
-			String finalFileName = finalFileNames.get(i);
-			String fileName = CharSequenceUtil.subAfter(finalFileName, "/", true);
-			JSONObject attachment = new JSONObject().put("id", String.valueOf(i))
-					.put("filename", fileName)
-					.put("uploaded_filename", finalFileName);
-			attachments.put(attachment);
-			JSONObject option = new JSONObject().put("type", 11)
-					.put("name", "image" + (i + 1))
-					.put("value", i);
-			options.put(option);
-		}
-		options.put(new JSONObject().put("type", 3)
-				.put("name", "dimensions")
-				.put("value", "--ar " + dimensions.getValue()));
-		return postJsonAndCheckStatus(params.toString());
+		return runInteraction(() -> {
+			String paramsStr = replaceInteractionParams(this.paramsMap.get("blend"), nonce);
+			JSONObject params = new JSONObject(paramsStr);
+			JSONArray options = params.getJSONObject("data").getJSONArray("options");
+			JSONArray attachments = params.getJSONObject("data").getJSONArray("attachments");
+			for (int i = 0; i < finalFileNames.size(); i++) {
+				String finalFileName = finalFileNames.get(i);
+				String fileName = CharSequenceUtil.subAfter(finalFileName, "/", true);
+				JSONObject attachment = new JSONObject().put("id", String.valueOf(i))
+						.put("filename", fileName)
+						.put("uploaded_filename", finalFileName);
+				attachments.put(attachment);
+				JSONObject option = new JSONObject().put("type", 11)
+						.put("name", "image" + (i + 1))
+						.put("value", i);
+				options.put(option);
+			}
+			options.put(new JSONObject().put("type", 3)
+					.put("name", "dimensions")
+					.put("value", "--ar " + dimensions.getValue()));
+			return params.toString();
+		});
 	}
 
 	private String replaceInteractionParams(String paramsStr, String nonce) {
@@ -123,7 +132,7 @@ public class DiscordServiceImpl implements DiscordService {
 		}
 		return paramsStr.replace("$guild_id", this.account.getGuildId())
 				.replace("$channel_id", this.account.getChannelId())
-				.replace("$session_id", sessionId)
+				.replace("$session_id", DiscordSessionIds.forInteraction(sessionId))
 				.replace("$nonce", nonce);
 	}
 
@@ -196,6 +205,17 @@ public class DiscordServiceImpl implements DiscordService {
 		headers.set("User-Agent", this.account.getUserAgent());
 		HttpEntity<String> httpEntity = new HttpEntity<>(paramsStr, headers);
 		return this.restTemplate.postForEntity(url, httpEntity, String.class);
+	}
+
+	private Message<Void> runInteraction(Supplier<String> paramsFactory) {
+		try {
+			if (CharSequenceUtil.isBlank(this.account.getSessionId())) {
+				return Message.of(ReturnCode.VALIDATION_ERROR, "discord session is not ready");
+			}
+			return postJsonAndCheckStatus(paramsFactory.get());
+		} catch (IllegalStateException e) {
+			return Message.of(ReturnCode.VALIDATION_ERROR, e.getMessage());
+		}
 	}
 
 	private Message<Void> postJsonAndCheckStatus(String paramsStr) {

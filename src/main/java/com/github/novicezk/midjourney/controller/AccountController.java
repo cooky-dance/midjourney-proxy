@@ -9,6 +9,7 @@ import io.swagger.annotations.ApiParam;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -32,5 +33,22 @@ public class AccountController {
 	@GetMapping("/list")
 	public List<DiscordAccount> list() {
 		return this.loadBalancer.getAllInstances().stream().map(DiscordInstance::account).toList();
+	}
+
+	@ApiOperation(value = "重新连接指定账号")
+	@PostMapping("/{id}/reconnect")
+	public DiscordAccount reconnect(@ApiParam(value = "账号ID") @PathVariable String id) {
+		DiscordInstance instance = this.loadBalancer.getDiscordInstance(id);
+		if (instance == null) {
+			return null;
+		}
+		try {
+			instance.reconnect();
+		} catch (Exception e) {
+			instance.account().setEnable(false);
+			instance.account().setDisableReason(e.getMessage());
+			instance.account().setSessionId(null);
+		}
+		return instance.account();
 	}
 }

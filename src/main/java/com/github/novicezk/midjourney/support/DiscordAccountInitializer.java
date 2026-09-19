@@ -49,20 +49,29 @@ public class DiscordAccountInitializer implements ApplicationRunner {
 			DiscordAccount account = new DiscordAccount();
 			BeanUtil.copyProperties(configAccount, account);
 			account.setId(configAccount.getChannelId());
+			DiscordInstance instance;
 			try {
-				DiscordInstance instance = this.discordAccountHelper.createDiscordInstance(account);
-				if (!account.isEnable()) {
-					continue;
-				}
+				instance = this.discordAccountHelper.createDiscordInstance(account);
+			} catch (Exception e) {
+				log.error("Account({}) create fail, skipped: {}", account.getDisplay(), e.getMessage());
+				continue;
+			}
+			instances.add(instance);
+			if (!account.isEnable()) {
+				account.setDisableReason("disabled by config");
+				continue;
+			}
+			try {
 				instance.startWss();
 				AsyncLockUtils.LockObject lock = AsyncLockUtils.waitForLock("wss:" + account.getChannelId(), Duration.ofSeconds(10));
 				if (ReturnCode.SUCCESS != lock.getProperty("code", Integer.class, 0)) {
 					throw new ValidateException(lock.getProperty("description", String.class));
 				}
-				instances.add(instance);
 			} catch (Exception e) {
 				log.error("Account({}) init fail, disabled: {}", account.getDisplay(), e.getMessage());
 				account.setEnable(false);
+				account.setDisableReason(e.getMessage());
+				account.setSessionId(null);
 			}
 		}
 		Set<String> enableInstanceIds = instances.stream().filter(DiscordInstance::isAlive).map(DiscordInstance::getInstanceId).collect(Collectors.toSet());

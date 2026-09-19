@@ -35,6 +35,28 @@ class ApiAuthorizeInterceptorTest {
 	}
 
 	@Test
+	void fastSecretCanReconnectAccount() throws Exception {
+		ProxyProperties properties = new ProxyProperties();
+		properties.setApiSecret("fast-secret");
+		properties.setApiSecretSlow("slow-secret");
+		ApiAuthorizeInterceptor interceptor = new ApiAuthorizeInterceptor(properties);
+
+		assertTrue(interceptor.preHandle(request("POST", "/mj/account/chan-1/reconnect", "fast-secret"), new MockHttpServletResponse(), new Object()));
+	}
+
+	@Test
+	void slowSecretCannotReconnectAccount() throws Exception {
+		ProxyProperties properties = new ProxyProperties();
+		properties.setApiSecret("fast-secret");
+		properties.setApiSecretSlow("slow-secret");
+		ApiAuthorizeInterceptor interceptor = new ApiAuthorizeInterceptor(properties);
+		MockHttpServletResponse response = new MockHttpServletResponse();
+
+		assertTrue(!interceptor.preHandle(request("POST", "/mj/account/chan-1/reconnect", "slow-secret"), response, new Object()));
+		assertEquals(403, response.getStatus());
+	}
+
+	@Test
 	void unknownSecretIsUnauthorized() throws Exception {
 		ProxyProperties properties = new ProxyProperties();
 		properties.setApiSecret("fast-secret");

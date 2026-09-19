@@ -26,6 +26,8 @@ public interface DiscordInstance extends DiscordService {
 
 	void startWss() throws Exception;
 
+	void reconnect() throws Exception;
+
 	List<Task> getRunningTasks();
 
 	List<Task> getQueueTasks();

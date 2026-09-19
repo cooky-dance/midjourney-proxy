@@ -77,6 +77,14 @@ public class DiscordInstanceImpl implements DiscordInstance {
 	}
 
 	@Override
+	public synchronized void reconnect() throws Exception {
+		this.account.setEnable(true);
+		this.account.setDisableReason(null);
+		this.account.setSessionId(null);
+		this.socketStarter.reconnect();
+	}
+
+	@Override
 	public List<Task> getRunningTasks() {
 		return this.runningTasks;
 	}

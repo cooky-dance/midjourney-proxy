@@ -26,10 +26,14 @@ public class DiscordAccount extends DomainObject {
 	 * and must never be persisted as a hard-coded interaction session.
 	 */
 	@JsonIgnore
+	@ApiModelProperty(hidden = true)
 	private volatile String sessionId;
 
 	@ApiModelProperty("是否可用")
 	private boolean enable = true;
+
+	@ApiModelProperty("不可用原因")
+	private String disableReason;
 
 	@ApiModelProperty("并发数")
 	private int coreSize = 3;

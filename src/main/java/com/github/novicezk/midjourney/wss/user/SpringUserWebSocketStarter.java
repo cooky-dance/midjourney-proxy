@@ -23,7 +23,7 @@ import java.util.concurrent.TimeoutException;
 
 @Slf4j
 public class SpringUserWebSocketStarter implements WebSocketStarter {
-	private static final int CONNECT_RETRY_LIMIT = 5;
+	private static final int CONNECT_RETRY_LIMIT = 1;
 
 	private final DiscordAccount account;
 	private final UserMessageListener userMessageListener;
@@ -46,6 +46,17 @@ public class SpringUserWebSocketStarter implements WebSocketStarter {
 	@Override
 	public void start() throws Exception {
 		start(false);
+	}
+
+	@Override
+	public void reconnect() throws Exception {
+		closeSocketSessionWhenIsOpen();
+		this.resumeData = null;
+		this.running = false;
+		this.account.setEnable(true);
+		this.account.setDisableReason(null);
+		this.account.setSessionId(null);
+		tryStart(false);
 	}
 
 	private void start(boolean reconnect) {
@@ -91,6 +102,8 @@ public class SpringUserWebSocketStarter implements WebSocketStarter {
 	private void onSocketSuccess(String sessionId, Object sequence, String resumeGatewayUrl) {
 		this.resumeData = new ResumeData(sessionId, sequence, resumeGatewayUrl);
 		this.account.setSessionId(sessionId);
+		this.account.setEnable(true);
+		this.account.setDisableReason(null);
 		this.running = true;
 		log.info("[wss-{}] Gateway session ready.", this.account.getDisplay());
 		notifyWssLock(ReturnCode.SUCCESS, "");
@@ -108,13 +121,11 @@ public class SpringUserWebSocketStarter implements WebSocketStarter {
 			return;
 		}
 		this.running = false;
-		if (code == SpringWebSocketHandler.CLOSE_CODE_INVALIDATE) {
-			log.warn("[wss-{}] Discord invalidated the Gateway session. Account disabled; automatic reconnect is intentionally suppressed.", this.account.getDisplay());
-			disableAccount();
-		} else if (code >= 4000) {
+		GatewayFailurePolicy.Action action = GatewayFailurePolicy.decide(code);
+		if (action == GatewayFailurePolicy.Action.DISABLE) {
 			log.warn("[wss-{}] Can't reconnect! Account disabled. Closed by {}({}).", this.account.getDisplay(), code, reason);
-			disableAccount();
-		} else if (code == 2001) {
+			disableAccount(reason);
+		} else if (action == GatewayFailurePolicy.Action.RESUME) {
 			log.warn("[wss-{}] Closed by {}({}). Try reconnect...", this.account.getDisplay(), code, reason);
 			tryReconnect();
 		} else {
@@ -151,7 +162,7 @@ public class SpringUserWebSocketStarter implements WebSocketStarter {
 			}
 		}
 		log.error("[wss-{}] Account disabled", this.account.getDisplay());
-		disableAccount();
+		disableAccount("gateway reconnect exhausted");
 	}
 
 	public void tryStart(boolean reconnect) throws Exception {
@@ -174,11 +185,10 @@ public class SpringUserWebSocketStarter implements WebSocketStarter {
 		}
 	}
 
-	private void disableAccount() {
-		if (Boolean.FALSE.equals(this.account.isEnable())) {
-			return;
-		}
+	private void disableAccount(String reason) {
 		this.account.setEnable(false);
+		this.account.setDisableReason(reason);
+		this.account.setSessionId(null);
 	}
 
 	private void closeSocketSessionWhenIsOpen() {
